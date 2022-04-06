@@ -1,10 +1,9 @@
 use std::collections::VecDeque;
-use proc_macro2::Span;
+use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::LitStr;
 use vdom::{VNode, VRef};
 use crate::html::Html;
-use crate::TokenStream2;
 
 impl ToTokens for Html {
 
@@ -12,7 +11,7 @@ impl ToTokens for Html {
         let root_node = self.tree.get_root().expect("No node");
         let root_node_uuid_string = LitStr::new(String::from(root_node).as_str(), Span::call_site());
         let mut node_queue: VecDeque<VRef> = VecDeque::new();
-        let mut quotes: Vec<TokenStream2> = Vec::new();
+        let mut quotes: Vec<TokenStream> = Vec::new();
 
         node_queue.push_back(root_node);
 

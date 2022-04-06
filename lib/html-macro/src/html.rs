@@ -5,7 +5,7 @@ pub struct Html {
     root: HtmlNode,
     pub tree: VTree
 }
-\.m m       o
+
 impl Html {
     pub fn new(tree: VTree) -> Html {
         Html {

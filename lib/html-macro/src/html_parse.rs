@@ -1,10 +1,11 @@
+use syn::Ident;
 use syn::parse::{Parse, ParseStream};
-use syn::parse::{Peek, Result};
-use syn::{Attribute, DeriveInput, Error, Expr, FnArg, GenericArgument, Generics, Ident, Index, ItemFn, Lit, LitStr, Meta, parse_macro_input, parse_quote, PathArguments, PatType, Signature, spanned::Spanned, Token, Type, TypePath, Visibility};
+use syn::parse::Result;
+use syn::Token;
 
 use vdom::{VRef, VTree};
-use crate::html::Html;
 
+use crate::html::Html;
 
 impl Parse for Html {
 
