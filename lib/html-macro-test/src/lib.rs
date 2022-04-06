@@ -1,9 +1,9 @@
 
+#[cfg(test)]
 mod test {
     use speculoos::prelude::*;
     use html_macro::html;
     use vdom::VTree;
-
 
     #[test]
     fn test_parse() {
