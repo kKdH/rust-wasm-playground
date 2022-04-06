@@ -1,0 +1,41 @@
+[package]
+name = "wasm-sandbox"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = [
+    "lib/vdom",
+    "lib/vdom-link",
+    "lib/html-macro",
+    "lib/html-macro-test",
+]
+
+[dependencies]
+html-macro = { path = "lib/html-macro" }
+vdom = { path = "lib/vdom" }
+vdom-link = { path = "lib/vdom-link" }
+wasm-bindgen = "0.2.79"
+wasm-bindgen-futures = "0.4.29"
+js-sys = "0.3.56"
+log = "0.4.14"
+console_log = "0.2.0"
+
+[dependencies.web-sys]
+version = "0.3.56"
+features = [
+    'Window',
+    'Document',
+    'Node',
+    'Element',
+    'Event',
+    'EventTarget',
+    'HtmlElement',
+    'HtmlCollection',
+    'HtmlButtonElement',
+]
+
+#yew = "0.19.3"
+#yew-router = "0.16.0"
+#yew-agent = "0.1.0"
+#yewdux = "0.6.2"

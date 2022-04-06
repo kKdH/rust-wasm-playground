@@ -1,0 +1,30 @@
+[package]
+name = "vdom-link"
+version = "0.1.0"
+authors = ["Elmar Schug <elmar.schug@jayware.org>"]
+edition = "2021"
+
+[dependencies]
+vdom = { path = "../vdom"}
+wasm-bindgen = "0.2.79"
+wasm-bindgen-futures = "0.4.29"
+js-sys = "0.3.56"
+log = "0.4.14"
+console_log = "0.2.0"
+
+[dependencies.web-sys]
+version = "0.3.56"
+features = [
+    'Window',
+    'Document',
+    'Node',
+    'Element',
+    'Event',
+    'EventTarget',
+    'HtmlElement',
+    'HtmlCollection',
+    'HtmlButtonElement',
+]
+
+[dev-dependencies]
+speculoos = "0.8.0"

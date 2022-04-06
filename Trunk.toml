@@ -1,0 +1,17 @@
+[build]
+target = "index.html"
+release = false
+dist = "dist"
+public_url = "/"
+
+[watch]
+# Paths to watch. The `build.target`'s parent folder is watched by default.
+watch = []
+ignore = []
+
+[serve]
+addr = "127.0.0.1"
+#addr = "0.0.0.0"
+port = 8080
+open = false
+no_autoreload = false

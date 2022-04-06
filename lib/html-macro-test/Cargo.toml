@@ -1,0 +1,10 @@
+[package]
+name = "html-macro-test"
+version = "0.1.0"
+authors = ["Elmar Schug <elmar.schug@jayware.org>"]
+edition = "2021"
+
+[dependencies]
+html-macro = { path = "../html-macro" }
+vdom = { path = "../vdom" }
+speculoos = "0.8.0"
