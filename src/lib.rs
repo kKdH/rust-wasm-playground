@@ -1,5 +1,6 @@
 extern crate wasm_bindgen;
 
+use std::collections::{HashMap, VecDeque};
 use log::info;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
@@ -7,7 +8,7 @@ use web_sys::{Element, Event, EventTarget, HtmlButtonElement, HtmlElement};
 use web_sys::console::info;
 
 use html_macro::html;
-use vdom::{VNode, VTree};
+use vdom::{VNode, VRef, VTree};
 use vdom_link::VNodeLink;
 
 #[wasm_bindgen]
@@ -53,23 +54,48 @@ pub fn greet() {
 
     let tree: VTree = html! {
         <div>
-            <p></p>
-            <button></button>
+            <div>
+                <div></div>
+                <div>
+                    <label></label>
+                    <div>
+                        <input></input>
+                    </div>
+                </div>
+                <div>
+                    <div>
+                        <button></button>
+                    </div>
+                </div>
+            </div>
         </div>
     };
 
-    tree.nodes().iter().for_each(|node| {
-        let element = (*node).upsert(&document);
-        app.append_child(&element);
-    });
+    let mut elements: HashMap<VRef, Element> = HashMap::new();
+    let mut render_queue: VecDeque<VRef> = VecDeque::new();
+    let root_node = tree.get_root().expect("Root node.");
 
-    // let divElement = tree.upsert(&document);
-    //
-    // app.append_child(&divElement)
-    //     .expect("append child");
+    render_queue.push_back(root_node);
 
-    app.append_child(&button)
-        .expect("append child");
+    while !render_queue.is_empty() {
+        let node_ref = render_queue.pop_front().expect("Ref");
+        let node: VNode = tree.get_node(&node_ref).expect("Node");
+        let element = node.upsert(&document);
+
+        if let Some(parent_ref) = tree.parent(&node_ref) {
+            let parent_element = elements.get(parent_ref).expect("Parent element");
+            parent_element.append_child(&element);
+        }
+
+        info!("Node: {:?}", node);
+        tree.children(&node_ref).iter().for_each(|child_ref| {
+            render_queue.push_back(child_ref.id)
+        });
+        elements.insert(node_ref, element);
+    }
+
+    let root_element = elements.get(&root_node).expect("Element");
+    app.append_child(&root_element);
 
     info!("app: {:?}", app);
 }

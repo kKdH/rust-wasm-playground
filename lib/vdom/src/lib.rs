@@ -156,6 +156,10 @@ impl VTree {
         }
     }
 
+    pub fn parent(&self, child: &VRef) -> Option<&VRef> {
+        self.parents.get(child)
+    }
+
     pub fn children(&self, parent: &VRef) -> Vec<&VNode> {
         match self.children.get(parent) {
             None => {

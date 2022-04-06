@@ -18,10 +18,10 @@ impl Parse for Html {
             let lookahead = input.lookahead1();
             if lookahead.peek(Token![<]) {
                 if input.peek2(Token![/]) {
-                    input.parse::<Token![<]>();
-                    input.parse::<Token![/]>();
+                    input.parse::<Token![<]>()?;
+                    input.parse::<Token![/]>()?;
                     let name = input.parse::<Ident>()?;
-                    input.parse::<Token![>]>();
+                    input.parse::<Token![>]>()?;
                     match parse_stack.pop() {
                         None => {
                             panic!("Closing tag '{:?}' does not have a corresponding element!", name.to_string())
@@ -38,7 +38,7 @@ impl Parse for Html {
                     }
                 }
                 else {
-                    input.parse::<Token![<]>();
+                    input.parse::<Token![<]>()?;
                     let node = tree.create_random_node();
                     match parse_stack.last() {
                         None => {
@@ -64,7 +64,7 @@ impl Parse for Html {
                     }));
                 }
             } else if lookahead.peek(Token![>]) {
-                input.parse::<Token![>]>();
+                input.parse::<Token![>]>()?;
             } else {
                 panic!("unknown token")
             }
