@@ -1,0 +1,9 @@
+error: proc macro panicked
+ --> tests/ui/wrong-closing-tag-fails.rs:5:5
+  |
+5 | /     html! {
+6 | |         <a></b>
+7 | |     };
+  | |_____^
+  |
+  = help: message: Expected closing tag for '"a"' got '"b"'!

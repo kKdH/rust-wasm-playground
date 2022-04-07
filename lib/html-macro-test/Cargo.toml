@@ -7,4 +7,5 @@ edition = "2021"
 [dependencies]
 html-macro = { path = "../html-macro" }
 vdom = { path = "../vdom" }
+trybuild = "1.0"
 speculoos = "0.8.0"
