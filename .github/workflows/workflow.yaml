@@ -21,6 +21,10 @@ jobs:
           key: toolchain-${{ hashFiles('rust-toolchain') }}
       - name: Cache project dependencies
         uses: Swatinem/rust-cache@v1
+      - name: Fetch
+        uses: actions-rs/cargo@v1
+        with:
+          command: fetch
       - name: Build
         uses: actions-rs/cargo@v1
         with:
