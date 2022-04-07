@@ -1,2 +1,4 @@
-= Web-Assembly Playground =
+image::https://github.com/kKdH/rust-wasm-playground/actions/workflows/workflow.yaml/badge.svg?branch=master&event=push[link="https://github.com/kKdH/rust-wasm-playground/actions/workflows/workflow.yaml"]
+'''
 
+== Web-Assembly Playground ==
