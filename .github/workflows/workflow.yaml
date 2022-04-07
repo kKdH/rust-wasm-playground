@@ -7,16 +7,24 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
-      - name: Install rust toolchain
+      - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - name: build
+      - name: Cache Rust toolchain
+        uses: actions/cache@v2
+        with:
+          path: |
+           ~/.rustup/toolchains
+           ~/.rustup/update-hashes
+           ~/.rustup/settings.toml
+          key: toolchain-${{ hashFiles('rust-toolchain') }}
+      - name: Build
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --workspace
-      - name: test
+      - name: Test
         uses: actions-rs/cargo@v1
         with:
           command: test
