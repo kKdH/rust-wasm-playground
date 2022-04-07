@@ -1,0 +1,9 @@
+error: proc macro panicked
+ --> tests/ui/plaintext-literal-fails.rs:5:5
+  |
+5 | /     html! {
+6 | |         <div>Hello World</div>
+7 | |     };
+  | |_____^
+  |
+  = help: message: Expected closing tag for '"World"' got '"div"'!
