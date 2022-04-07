@@ -1,7 +1,6 @@
-use std::borrow::BorrowMut;
 use web_sys::{Document, Element};
 
-use vdom::{VNode, VTree};
+use vdom::VNode;
 
 pub trait VNodeLink {
 

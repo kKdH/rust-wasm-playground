@@ -4,8 +4,7 @@ use std::collections::{HashMap, VecDeque};
 use log::info;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
-use web_sys::{Element, Event, EventTarget, HtmlButtonElement, HtmlElement};
-use web_sys::console::info;
+use web_sys::{Element, Event, HtmlButtonElement};
 
 use html_macro::html;
 use vdom::{VNode, VRef, VTree};
