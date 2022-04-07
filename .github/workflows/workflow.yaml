@@ -19,6 +19,8 @@ jobs:
            ~/.rustup/update-hashes
            ~/.rustup/settings.toml
           key: toolchain-${{ hashFiles('rust-toolchain') }}
+      - name: Cache project dependencies
+        uses: Swatinem/rust-cache@v1
       - name: Build
         uses: actions-rs/cargo@v1
         with:
