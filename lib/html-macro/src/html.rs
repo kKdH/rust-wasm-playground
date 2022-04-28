@@ -21,6 +21,60 @@ enum HtmlNode {
     Text { value: String }
 }
 
-struct HtmlElement {}
+#[derive(PartialEq, Debug)]
+pub struct HtmlElement {
+    name: String,
+    attributes: Vec<HtmlAttribute>
+}
 
-struct HtmlText {}
+impl HtmlElement {
+
+    pub fn new(name: String, attributes: Vec<HtmlAttribute>) -> HtmlElement {
+        HtmlElement { name, attributes }
+    }
+
+    pub fn add_attribute(&mut self, attribute: HtmlAttribute) {
+        self.attributes.push(attribute)
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct HtmlAttribute {
+    pub name: String,
+    pub value: Option<String>
+}
+
+impl HtmlAttribute {
+
+    pub fn new(name: String, value: Option<String>) -> HtmlAttribute {
+        HtmlAttribute { name, value }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct HtmlText {
+    value: String
+}
+
+impl HtmlText {
+
+    pub fn new(value: String) -> HtmlText {
+        HtmlText { value }
+    }
+}
+
+pub struct Html2 {
+    pub nodes: Vec<HtmlElement>
+}
+
+impl Html2 {
+
+    pub fn new() -> Html2 {
+        Html2 { nodes: Vec::new() }
+    }
+
+    pub fn root(&self) -> &HtmlElement {
+        todo!()
+    }
+
+}
