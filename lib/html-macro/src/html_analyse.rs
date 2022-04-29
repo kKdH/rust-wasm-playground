@@ -1,23 +1,51 @@
 use crate::html::{Html2, HtmlAttribute, HtmlElement};
-use crate::html_parse::{HtmlToken, HtmlTokenStreamCursor};
+use crate::html_parse::{HtmlToken};
 use crate::HtmlTokenStream;
 
-pub fn analyse(input: HtmlTokenStream) -> Html2 {
-    let mut cursor: HtmlTokenStreamCursor = input.cursor();
-    let mut context = AnalyseContext { stack: Vec::new(), attribute: None, html: Html2::new() };
+pub(crate) type AnalyseResult = Result<Html2, AnalyseError>;
+
+#[derive(Debug)]
+pub enum AnalyseError {
+    Failure { message: &'static str },
+    UnexpectedToken { message: &'static str, token: HtmlToken },
+    UnexpectedEnd,
+}
+
+pub fn analyse_html(input: HtmlTokenStream) -> AnalyseResult {
+    let mut context = AnalyseContext { stack: Vec::new(), attribute: None, html: None };
     let mut behavior: Behavior = Behavior::of(initial);
+    let mut position: usize = 0;
 
-    while let Some(token) = input.get(&mut cursor) {
-        behavior = behavior.handle(&mut context, token)
-    }
+    let result = loop {
+        match input.get(position) {
+            Some(token) => {
+                let next_behavior = behavior.handle(&mut context, token);
+                behavior = match next_behavior {
+                    Behavior::Custom(_) |
+                    Behavior::Same => next_behavior,
+                    Behavior::Done => {
+                        match context.html {
+                            None => break Err(AnalyseError::Failure { message: "No result" }),
+                            Some(html) => break Ok(html),
+                        }
+                    },
+                    Behavior::Failure(error) => break Err(error),
+                };
+            }
+            None => {
+                break Err(AnalyseError::UnexpectedEnd)
+            }
+        }
+        position += 1;
+    };
 
-    context.html
+    result
 }
 
 struct AnalyseContext {
     stack: Vec<HtmlElement>,
     attribute: Option<HtmlAttribute>,
-    html: Html2
+    html: Option<Html2>
 }
 
 type BehaviorFn = fn(&mut AnalyseContext, &HtmlToken) -> Behavior;
@@ -25,7 +53,8 @@ type BehaviorFn = fn(&mut AnalyseContext, &HtmlToken) -> Behavior;
 enum Behavior {
     Custom(BehaviorFn),
     Same,
-    Failure(&'static str)
+    Done,
+    Failure(AnalyseError)
 }
 
 impl Behavior {
@@ -38,20 +67,30 @@ impl Behavior {
         Behavior::Same
     }
 
+    fn done() -> Behavior {
+        Behavior::Done
+    }
+
     fn fail(message: &'static str) -> Behavior {
-        Behavior::Failure(message)
+        Behavior::Failure(AnalyseError::Failure { message })
+    }
+
+    fn unexpected(message: &'static str, token: &HtmlToken) -> Behavior {
+        Behavior::Failure(AnalyseError::UnexpectedToken { message, token: (*token).clone() })
     }
 
     fn handle(self, context: &mut AnalyseContext, token: &HtmlToken) -> Self {
         match self {
             Behavior::Same => panic!("'Same' can not be the first behavior!"),
-            Behavior::Failure(message) => panic!("{}", message),
+            Behavior::Done => Behavior::Done,
+            Behavior::Failure(_) => self,
             Behavior::Custom(behavior_fn) => {
                 let next_behavior = behavior_fn(context, token);
                 match next_behavior {
                     Behavior::Custom(_) => next_behavior,
                     Behavior::Same => self,
-                    Behavior::Failure(message) => panic!("{}", message),
+                    Behavior::Done => Behavior::Done,
+                    Behavior::Failure(_) => self,
                 }
             }
         }
@@ -70,7 +109,7 @@ fn initial(_: &mut AnalyseContext, token: &HtmlToken) -> Behavior {
         HtmlToken::AttributeName { .. } => Behavior::fail("Unexpected attribute name"),
         HtmlToken::AttributeValue { .. } => Behavior::fail("Unexpected attribute value"),
         HtmlToken::Text { .. } => Behavior::fail("Unexpected text"),
-        HtmlToken::End => Behavior::fail("Unexpected end")
+        HtmlToken::EOF => Behavior::unexpected("Got unexpected token in initial behavior!", token)
     }
 }
 
@@ -82,14 +121,14 @@ fn analyse_element_start(context: &mut AnalyseContext, token: &HtmlToken) -> Beh
         HtmlToken::Slash => Behavior::of(analyse_element_end),
         HtmlToken::Eq => Behavior::fail("Unexpected ="),
         HtmlToken::ElementStart { ident } => {
-            context.stack.push(HtmlElement::new(ident.to_string(), Vec::new()));
+            context.stack.push(HtmlElement::new(ident.to_string(), Vec::new(), Vec::new()));
             Behavior::of(analyse_element_attributes)
         },
         HtmlToken::ElementEnd { .. } => Behavior::fail("Unexpected <"),
         HtmlToken::AttributeName { .. } => Behavior::fail("Unexpected attribute name"),
         HtmlToken::AttributeValue { .. } => Behavior::fail("Unexpected attribute value"),
         HtmlToken::Text { .. } => Behavior::fail("Unexpected text"),
-        HtmlToken::End => Behavior::fail("Unexpected end"),
+        HtmlToken::EOF => Behavior::unexpected("Got unexpected token while analysing the start of an element!", token)
     }
 }
 
@@ -98,8 +137,24 @@ fn analyse_element_end(context: &mut AnalyseContext, token: &HtmlToken) -> Behav
     match token {
         HtmlToken::LessThan => Behavior::of(analyse_element_start),
         HtmlToken::GreaterThan => {
-            context.html.nodes.push(context.stack.pop().unwrap());
-            Behavior::of(initial)
+            match context.stack.pop() {
+                None => Behavior::fail("No element"),
+                Some(element) => {
+                    match context.stack.last_mut() {
+                        Some(parent) => {
+                            parent.add_child(element);
+                            Behavior::of(initial)
+                        }
+                        None => {
+                            // Because their is no parent it must be the root element.
+                            // Therefore push it back onto the stack.
+                            context.stack.push(element);
+                            Behavior::of(analyse_end)
+                        }
+                    }
+
+                }
+            }
         },
         HtmlToken::Slash => Behavior::same(),
         HtmlToken::Eq => Behavior::fail("Unexpected ="),
@@ -108,7 +163,7 @@ fn analyse_element_end(context: &mut AnalyseContext, token: &HtmlToken) -> Behav
         HtmlToken::AttributeName { .. } => Behavior::fail("Unexpected attribute name"),
         HtmlToken::AttributeValue { .. } => Behavior::fail("Unexpected attribute value"),
         HtmlToken::Text { .. } => Behavior::fail("Unexpected text"),
-        HtmlToken::End => Behavior::fail("Unexpected end"),
+        HtmlToken::EOF => Behavior::unexpected("Got unexpected token while analysing the end of an element!", token)
     }
 }
 
@@ -137,7 +192,33 @@ fn analyse_element_attributes(context: &mut AnalyseContext, token: &HtmlToken) -
             }
         },
         HtmlToken::Text { .. } => Behavior::fail("Unexpected text"),
-        HtmlToken::End => Behavior::fail("Unexpected end"),
+        HtmlToken::EOF => Behavior::unexpected("Got unexpected token while analysing the attributes of an element!", token)
+    }
+}
+
+fn analyse_end(context: &mut AnalyseContext, token: &HtmlToken) -> Behavior {
+    println!("Behavior: analyse_end, Token: {:?}", token);
+    match token {
+        HtmlToken::LessThan => Behavior::fail("Unexpected <"),
+        HtmlToken::GreaterThan => Behavior::fail("Unexpected >"),
+        HtmlToken::Slash => Behavior::fail("Unexpected /"),
+        HtmlToken::Eq => Behavior::fail("Unexpected ="),
+        HtmlToken::ElementStart { .. } => Behavior::fail("Unexpected element start"),
+        HtmlToken::ElementEnd { .. } => Behavior::fail("Unexpected <"),
+        HtmlToken::AttributeName { .. } => Behavior::fail("Unexpected attribute start"),
+        HtmlToken::AttributeValue { .. } => Behavior::fail("Unexpected attribute value"),
+        HtmlToken::Text { .. } => Behavior::fail("Unexpected text"),
+        HtmlToken::EOF => {
+            match context.stack.pop() {
+                None => {
+                    Behavior::fail("No element left on stack!")
+                }
+                Some(element) => {
+                    context.html = Some(Html2::new(element));
+                    Behavior::done()
+                }
+            }
+        },
     }
 }
 
@@ -147,7 +228,7 @@ mod test {
     use proc_macro2::{Ident, Span};
     use syn::LitStr;
     use crate::html::{Html2, HtmlAttribute, HtmlElement};
-    use crate::html_analyse::analyse;
+    use crate::html_analyse::{analyse_html, AnalyseError};
     use crate::html_parse::HtmlToken;
     use crate::HtmlTokenStream;
 
@@ -162,12 +243,14 @@ mod test {
             HtmlToken::Slash,
             HtmlToken::ElementEnd { ident: Some(Ident::new("div", Span::call_site())) },
             HtmlToken::GreaterThan,
+            HtmlToken::EOF
         ]);
 
-        let html: Html2 = analyse(input);
+        let html: Result<Html2, AnalyseError> = analyse_html(input);
 
-        assert_that(html.nodes.first().unwrap())
-            .is_equal_to(HtmlElement::new(String::from("div"), Vec::new()))
+        assert_that(&html).is_ok();
+        assert_that(html.ok().unwrap().root())
+            .is_equal_to(HtmlElement::new(String::from("div"), Vec::new(), Vec::new()))
     }
 
     #[test]
@@ -184,16 +267,19 @@ mod test {
             HtmlToken::Slash,
             HtmlToken::ElementEnd { ident: Some(Ident::new("div", Span::call_site())) },
             HtmlToken::GreaterThan,
+            HtmlToken::EOF
         ]);
 
-        let html: Html2 = analyse(input);
+        let html: Result<Html2, AnalyseError> = analyse_html(input);
 
-        assert_that(html.nodes.first().unwrap())
+        assert_that(&html).is_ok();
+        assert_that(html.ok().unwrap().root())
             .is_equal_to(HtmlElement::new(
                 String::from("div"),
                 vec![
                     HtmlAttribute::new(String::from("id"), Some(String::from("container")))
-                ]
+                ],
+                Vec::new()
             ))
     }
 
@@ -202,16 +288,18 @@ mod test {
 
         let input = HtmlTokenStream::new(vec![
             HtmlToken::LessThan,
-            HtmlToken::ElementStart { ident: Ident::new("div", Span::call_site()) },
+            HtmlToken::ElementStart { ident: Ident::new("img", Span::call_site()) },
             HtmlToken::Slash,
             HtmlToken::ElementEnd { ident: None },
             HtmlToken::GreaterThan,
+            HtmlToken::EOF
         ]);
 
-        let html: Html2 = analyse(input);
+        let html: Result<Html2, AnalyseError> = analyse_html(input);
 
-        assert_that(html.nodes.first().unwrap())
-            .is_equal_to(HtmlElement::new(String::from("div"), Vec::new()))
+        assert_that(&html).is_ok();
+        assert_that(html.ok().unwrap().root())
+            .is_equal_to(HtmlElement::new(String::from("img"), Vec::new(), Vec::new()))
     }
 
     #[test]
@@ -232,13 +320,19 @@ mod test {
             HtmlToken::Slash,
             HtmlToken::ElementEnd { ident: Some(Ident::new("div", Span::call_site())) },
             HtmlToken::GreaterThan,
+            HtmlToken::EOF
         ]);
 
-        let html: Html2 = analyse(input);
+        let html: Result<Html2, AnalyseError> = analyse_html(input);
 
-        assert_that(html.nodes.get(1).unwrap())
-            .is_equal_to(HtmlElement::new(String::from("div"), Vec::new()));
-        assert_that(html.nodes.get(0).unwrap())
-            .is_equal_to(HtmlElement::new(String::from("p"), Vec::new()))
+        assert_that(&html).is_ok();
+        assert_that(html.ok().unwrap().root())
+            .is_equal_to(HtmlElement::new(
+                String::from("div"),
+                Vec::new(),
+                vec![
+                    HtmlElement::new(String::from("p"), Vec::new(), Vec::new())
+                ]
+            ));
     }
 }

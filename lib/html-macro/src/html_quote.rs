@@ -7,7 +7,7 @@ use crate::html::Html;
 
 impl ToTokens for Html {
 
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         let root_node = self.tree.get_root().expect("No node");
         let root_node_uuid_string = LitStr::new(String::from(root_node).as_str(), Span::call_site());
         let mut node_queue: VecDeque<VRef> = VecDeque::new();

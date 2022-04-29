@@ -92,13 +92,7 @@ impl HtmlTokenStream {
         HtmlTokenStream { tokens }
     }
 
-    pub fn cursor(&self) -> HtmlTokenStreamCursor {
-        HtmlTokenStreamCursor { position: 0 }
-    }
-
-    pub fn get(& self, cursor: &mut HtmlTokenStreamCursor) -> Option<&HtmlToken> {
-        let position = cursor.position;
-        cursor.position += 1;
+    pub fn get(& self, position: usize) -> Option<&HtmlToken> {
         self.tokens.get(position)
     }
 }
@@ -112,16 +106,15 @@ impl Parse for HtmlTokenStream {
             tokens.append(&mut token);
         }
 
+        tokens.push(HtmlToken::EOF);
+
         Ok(HtmlTokenStream {
             tokens
         })
     }
 }
 
-pub struct HtmlTokenStreamCursor {
-    position: usize,
-}
-
+#[derive(Clone)]
 pub enum HtmlToken {
     LessThan,
     GreaterThan,
@@ -132,7 +125,7 @@ pub enum HtmlToken {
     AttributeName { ident: Ident },
     AttributeValue { literal: LitStr },
     Text { literal: LitStr },
-    End
+    EOF
 }
 
 impl HtmlToken {
@@ -243,7 +236,7 @@ impl Debug for HtmlToken {
                 formatter.debug_struct("HtmlToken::Text")
                     .finish()
             }
-            HtmlToken::End => {
+            HtmlToken::EOF => {
                 formatter.debug_struct("HtmlToken::End")
                     .finish()
             }
@@ -263,6 +256,7 @@ impl PartialEq for HtmlToken {
             (HtmlToken::AttributeName { ident: a}, HtmlToken::AttributeName { ident: b }) => a == b,
             (HtmlToken::AttributeValue { literal: a}, HtmlToken::AttributeValue { literal: b }) => a.value() == b.value(),
             (HtmlToken::Text { literal: a}, HtmlToken::Text { literal: b }) => a.value() == b.value(),
+            (HtmlToken::EOF, HtmlToken::EOF) => true,
             _ => false
         }
     }
@@ -287,7 +281,8 @@ mod test_html_token_parsing {
             .is_equal_to(&vec![
                 HtmlToken::LessThan,
                 HtmlToken::ElementStart {ident: Ident::new("div", Span::call_site())},
-                HtmlToken::GreaterThan
+                HtmlToken::GreaterThan,
+                HtmlToken::EOF
             ]);
     }
 
@@ -306,7 +301,8 @@ mod test_html_token_parsing {
                     HtmlToken::LessThan,
                     HtmlToken::Slash,
                     HtmlToken::ElementEnd { ident: Some(Ident::new("div", Span::call_site())) },
-                    HtmlToken::GreaterThan
+                    HtmlToken::GreaterThan,
+                    HtmlToken::EOF
                 ]);
         }
 
@@ -322,6 +318,7 @@ mod test_html_token_parsing {
                     HtmlToken::Slash,
                     HtmlToken::ElementEnd { ident: None },
                     HtmlToken::GreaterThan,
+                    HtmlToken::EOF
                 ]);
         }
     }
@@ -343,7 +340,8 @@ mod test_html_token_parsing {
                 HtmlToken::AttributeName { ident: Ident::new("class", Span::call_site()) },
                 HtmlToken::Eq,
                 HtmlToken::AttributeValue { literal: LitStr::new("foobar", Span::call_site()) },
-                HtmlToken::GreaterThan
+                HtmlToken::GreaterThan,
+                HtmlToken::EOF
             ]);
     }
 
@@ -363,7 +361,8 @@ mod test_html_token_parsing {
                 HtmlToken::LessThan,
                 HtmlToken::Slash,
                 HtmlToken::ElementEnd { ident: Some(Ident::new("p", Span::call_site())) },
-                HtmlToken::GreaterThan
+                HtmlToken::GreaterThan,
+                HtmlToken::EOF
             ]);
     }
 
@@ -407,7 +406,8 @@ mod test_html_token_parsing {
                 HtmlToken::LessThan,
                 HtmlToken::Slash,
                 HtmlToken::ElementEnd { ident: Some(Ident::new("div", Span::call_site())) },
-                HtmlToken::GreaterThan
+                HtmlToken::GreaterThan,
+                HtmlToken::EOF
             ]);
     }
 }

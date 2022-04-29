@@ -18,23 +18,27 @@ impl Html {
 #[derive(PartialEq, Debug)]
 enum HtmlNode {
     Element { name: Ident },
-    Text { value: String }
 }
 
 #[derive(PartialEq, Debug)]
 pub struct HtmlElement {
     name: String,
-    attributes: Vec<HtmlAttribute>
+    attributes: Vec<HtmlAttribute>,
+    children: Vec<HtmlElement>
 }
 
 impl HtmlElement {
 
-    pub fn new(name: String, attributes: Vec<HtmlAttribute>) -> HtmlElement {
-        HtmlElement { name, attributes }
+    pub fn new(name: String, attributes: Vec<HtmlAttribute>, children: Vec<HtmlElement>) -> HtmlElement {
+        HtmlElement { name, attributes, children }
     }
 
     pub fn add_attribute(&mut self, attribute: HtmlAttribute) {
         self.attributes.push(attribute)
+    }
+
+    pub fn add_child(&mut self, child: HtmlElement) {
+        self.children.push(child)
     }
 }
 
@@ -56,25 +60,18 @@ pub struct HtmlText {
     value: String
 }
 
-impl HtmlText {
-
-    pub fn new(value: String) -> HtmlText {
-        HtmlText { value }
-    }
-}
-
+#[derive(PartialEq, Debug)]
 pub struct Html2 {
-    pub nodes: Vec<HtmlElement>
+    root: HtmlElement
 }
 
 impl Html2 {
 
-    pub fn new() -> Html2 {
-        Html2 { nodes: Vec::new() }
+    pub fn new(root: HtmlElement) -> Html2 {
+        Html2 { root }
     }
 
     pub fn root(&self) -> &HtmlElement {
-        todo!()
+        &self.root
     }
-
 }
