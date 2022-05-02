@@ -1,8 +1,8 @@
-use crate::html::{Html2, HtmlAttribute, HtmlElement};
+use crate::html::{Html, HtmlAttribute, HtmlElement};
 use crate::html_parse::{HtmlToken};
 use crate::HtmlTokenStream;
 
-pub(crate) type AnalyseResult = Result<Html2, AnalyseError>;
+pub(crate) type AnalyseResult = Result<Html, AnalyseError>;
 
 #[derive(Debug)]
 pub enum AnalyseError {
@@ -45,7 +45,7 @@ pub fn analyse_html(input: HtmlTokenStream) -> AnalyseResult {
 struct AnalyseContext {
     stack: Vec<HtmlElement>,
     attribute: Option<HtmlAttribute>,
-    html: Option<Html2>
+    html: Option<Html>
 }
 
 type BehaviorFn = fn(&mut AnalyseContext, &HtmlToken) -> Behavior;
@@ -98,7 +98,6 @@ impl Behavior {
 }
 
 fn initial(_: &mut AnalyseContext, token: &HtmlToken) -> Behavior {
-    println!("Behavior: initial, Token: {:?}", token);
     match token {
         HtmlToken::LessThan => Behavior::of(analyse_element_start),
         HtmlToken::GreaterThan => Behavior::fail("Unexpected >"),
@@ -114,7 +113,6 @@ fn initial(_: &mut AnalyseContext, token: &HtmlToken) -> Behavior {
 }
 
 fn analyse_element_start(context: &mut AnalyseContext, token: &HtmlToken) -> Behavior {
-    println!("Behavior: analyse_element_start, Token: {:?}", token);
     match token {
         HtmlToken::LessThan => Behavior::fail("Unexpected <"),
         HtmlToken::GreaterThan => Behavior::fail("Unexpected >"),
@@ -133,7 +131,6 @@ fn analyse_element_start(context: &mut AnalyseContext, token: &HtmlToken) -> Beh
 }
 
 fn analyse_element_end(context: &mut AnalyseContext, token: &HtmlToken) -> Behavior {
-    println!("Behavior: analyse_element_end, Token: {:?}", token);
     match token {
         HtmlToken::LessThan => Behavior::of(analyse_element_start),
         HtmlToken::GreaterThan => {
@@ -168,7 +165,6 @@ fn analyse_element_end(context: &mut AnalyseContext, token: &HtmlToken) -> Behav
 }
 
 fn analyse_element_attributes(context: &mut AnalyseContext, token: &HtmlToken) -> Behavior {
-    println!("Behavior: analyse_element_attributes, Token: {:?}", token);
     match token {
         HtmlToken::LessThan => Behavior::fail("Unexpected <"),
         HtmlToken::GreaterThan => Behavior::of(analyse_element_end),
@@ -197,7 +193,6 @@ fn analyse_element_attributes(context: &mut AnalyseContext, token: &HtmlToken) -
 }
 
 fn analyse_end(context: &mut AnalyseContext, token: &HtmlToken) -> Behavior {
-    println!("Behavior: analyse_end, Token: {:?}", token);
     match token {
         HtmlToken::LessThan => Behavior::fail("Unexpected <"),
         HtmlToken::GreaterThan => Behavior::fail("Unexpected >"),
@@ -214,7 +209,7 @@ fn analyse_end(context: &mut AnalyseContext, token: &HtmlToken) -> Behavior {
                     Behavior::fail("No element left on stack!")
                 }
                 Some(element) => {
-                    context.html = Some(Html2::new(element));
+                    context.html = Some(Html::new(element));
                     Behavior::done()
                 }
             }
@@ -227,7 +222,7 @@ mod test {
     use speculoos::prelude::*;
     use proc_macro2::{Ident, Span};
     use syn::LitStr;
-    use crate::html::{Html2, HtmlAttribute, HtmlElement};
+    use crate::html::{Html, HtmlAttribute, HtmlElement};
     use crate::html_analyse::{analyse_html, AnalyseError};
     use crate::html_parse::HtmlToken;
     use crate::HtmlTokenStream;
@@ -246,7 +241,7 @@ mod test {
             HtmlToken::EOF
         ]);
 
-        let html: Result<Html2, AnalyseError> = analyse_html(input);
+        let html: Result<Html, AnalyseError> = analyse_html(input);
 
         assert_that(&html).is_ok();
         assert_that(html.ok().unwrap().root())
@@ -270,7 +265,7 @@ mod test {
             HtmlToken::EOF
         ]);
 
-        let html: Result<Html2, AnalyseError> = analyse_html(input);
+        let html: Result<Html, AnalyseError> = analyse_html(input);
 
         assert_that(&html).is_ok();
         assert_that(html.ok().unwrap().root())
@@ -295,7 +290,7 @@ mod test {
             HtmlToken::EOF
         ]);
 
-        let html: Result<Html2, AnalyseError> = analyse_html(input);
+        let html: Result<Html, AnalyseError> = analyse_html(input);
 
         assert_that(&html).is_ok();
         assert_that(html.ok().unwrap().root())
@@ -323,7 +318,7 @@ mod test {
             HtmlToken::EOF
         ]);
 
-        let html: Result<Html2, AnalyseError> = analyse_html(input);
+        let html: Result<Html, AnalyseError> = analyse_html(input);
 
         assert_that(&html).is_ok();
         assert_that(html.ok().unwrap().root())

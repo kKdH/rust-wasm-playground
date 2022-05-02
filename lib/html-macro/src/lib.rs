@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 
 use quote::quote;
 
-use crate::html::{Html, Html2};
+use crate::html::Html;
 use crate::html_analyse::{analyse_html, AnalyseResult};
 use crate::html_parse::{HtmlTokenStream, parse_html};
 
@@ -16,9 +16,9 @@ mod html_quote;
 #[proc_macro]
 pub fn html(item: TokenStream) -> TokenStream {
 
-    let html: Html = ::syn::parse(item.clone()).unwrap();
-    let html_tokens: HtmlTokenStream = parse_html(item);
-    let _: AnalyseResult = analyse_html(html_tokens);
+    let parse_result: HtmlTokenStream = parse_html(item);
+    let analyse_result: AnalyseResult = analyse_html(parse_result);
+    let html = analyse_result.ok().unwrap();
 
     let output: proc_macro2::TokenStream = quote! {
         #html

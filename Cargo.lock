@@ -64,6 +64,7 @@ dependencies = [
  "quote",
  "speculoos",
  "syn",
+ "uuid",
  "vdom",
 ]
 

@@ -1,58 +1,67 @@
 use std::collections::VecDeque;
+
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::LitStr;
-use vdom::{VNode, VRef};
-use crate::html::Html;
+use uuid::Uuid;
+
+use crate::html::{HtmlElement};
+use crate::Html;
 
 impl ToTokens for Html {
 
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let root_node = self.tree.get_root().expect("No node");
-        let root_node_uuid_string = LitStr::new(String::from(root_node).as_str(), Span::call_site());
-        let mut node_queue: VecDeque<VRef> = VecDeque::new();
+
+        let root_element = self.root();
+        let mut element_queue: VecDeque<(Option<Uuid>, &HtmlElement)> = VecDeque::new();
         let mut quotes: Vec<TokenStream> = Vec::new();
 
-        node_queue.push_back(root_node);
+        element_queue.push_back((None, root_element));
 
-        while !node_queue.is_empty() {
-            if let Some(node_ref) = node_queue.pop_front() {
-                let node: VNode = self.tree.get_node(&node_ref).expect("No node");
-                let name = LitStr::new(&node.kind, Span::call_site());
-                let node_ref_uuid_string = LitStr::new(String::from(node.id).as_str(), Span::call_site());
+        while !element_queue.is_empty() {
+            if let Some((parent, element)) = element_queue.pop_front() {
+                let node_uuid = Uuid::new_v4();
+                let node_ref_uuid_literal = LitStr::new(node_uuid.to_string().as_str(), Span::call_site());
+                let node_name_literal = LitStr::new(element.get_name().as_str(), Span::call_site());
 
                 quotes.push(quote! {
-                    let parent = {
-                        let node_ref = <vdom::VRef>::from_string(String::from(#node_ref_uuid_string)).ok().unwrap();
+                    {
+                        let node_ref = <vdom::VRef>::from_string(String::from(#node_ref_uuid_literal)).ok().unwrap();
                         tree.create_node(&node_ref);
                         tree.update_node(&node_ref, Box::new(|node| {
-                            node.kind = String::from(#name);
+                            node.kind = String::from(#node_name_literal);
                         }));
-                        node_ref
                     };
                 });
 
-                self.tree
-                    .children(&node_ref)
-                    .iter()
-                    .for_each(|child| {
-                        let uuid_string = LitStr::new(String::from(child.id).as_str(), Span::call_site());
-                        node_queue.push_back(child.id);
+                match parent {
+                    None => { // root element
+                        quotes.push(quote! {
+                            let root_node_ref = <vdom::VRef>::from_string(String::from(#node_ref_uuid_literal)).ok().unwrap();
+                            tree.set_root(&root_node_ref);
+                        });
+                    }
+                    Some(parent) => {
+                        let parent_ref_uuid_literal = LitStr::new(parent.to_string().as_str(), Span::call_site());
                         quotes.push(quote! {
                             {
-                                let child_ref = <vdom::VRef>::from_string(String::from(#uuid_string)).ok().unwrap();
-                                tree.append_child(&parent, &child_ref);
+                                let parent_node_ref = <vdom::VRef>::from_string(String::from(#parent_ref_uuid_literal)).ok().unwrap();
+                                let child_node_ref = <vdom::VRef>::from_string(String::from(#node_ref_uuid_literal)).ok().unwrap();
+                                tree.append_child(&parent_node_ref, &child_node_ref);
                             }
                         });
-                    })
+                    }
+                }
+
+                element.children().iter().for_each(|child| {
+                    element_queue.push_back((Some(node_uuid), child))
+                });
             }
         }
 
         tokens.extend(quote! {
             {
                 let mut tree = <vdom::VTree>::new();
-                let root_node_ref = <vdom::VRef>::from_string(String::from(#root_node_uuid_string)).ok().unwrap();
-                tree.set_root(&root_node_ref);
                 #(#quotes)*
                 tree
             }

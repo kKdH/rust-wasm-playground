@@ -9,10 +9,6 @@ mod test {
     #[test]
     fn test_parse() {
 
-        let mut expected = VTree::new();
-        let root_ref = expected.create_random_node();
-        let root_node = expected.get_node(&root_ref).unwrap();
-
         let parsed_tree: VTree = html! {
             <div>
                 <p></p>
