@@ -4,7 +4,7 @@ mod ui;
 mod test {
     use speculoos::prelude::*;
     use html_macro::html;
-    use vdom::VTree;
+    use vdom::{VItem, VTree};
 
     #[test]
     fn test_parse() {
@@ -20,19 +20,28 @@ mod test {
         assert_that!(&parsed_tree.nodes()).has_length(2);
         assert_that!(&parsed_tree.nodes())
             .matching_contains(|node| {
-                "div" == (*node).kind.as_str()
+                match &node.item {
+                    Some(VItem::Element { name }) => "div" == name,
+                    _ => false
+                }
             });
         assert_that!(&parsed_tree.nodes())
             .matching_contains(|node| {
-                "p" == (*node).kind.as_str()
+                match &node.item {
+                    Some(VItem::Element { name }) => "p" == name,
+                    _ => false
+                }
             });
         assert_that!(parsed_root)
             .is_some();
-        assert_that!(parsed_tree.get_node(&parsed_root.unwrap()).unwrap().kind)
-            .is_equal_to(String::from("div"));
+        assert_that!(parsed_tree.get_node(&parsed_root.unwrap()).unwrap().item)
+            .is_equal_to(Some(VItem::Element { name: String::from("div") }));
         assert_that!(&parsed_tree.children(&parsed_root.unwrap()))
             .matching_contains(|node| {
-                "p" == (*node).kind.as_str()
+                match &node.item {
+                    Some(VItem::Element { name }) => "p" == name,
+                    _ => false
+                }
             });
     }
 }

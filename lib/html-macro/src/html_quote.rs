@@ -29,7 +29,7 @@ impl ToTokens for Html {
                         let node_ref = <vdom::VRef>::from_string(String::from(#node_ref_uuid_literal)).ok().unwrap();
                         tree.create_node(&node_ref);
                         tree.update_node(&node_ref, Box::new(|node| {
-                            node.kind = String::from(#node_name_literal);
+                            node.item = core::option::Option::Some(vdom::VItem::Element { name: String::from(#node_name_literal) });
                         }));
                     };
                 });

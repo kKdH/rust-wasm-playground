@@ -45,14 +45,22 @@ impl From<&VNode> for VRef {
     }
 }
 
-pub type Kind = String;
+#[derive(PartialEq, Debug, Clone)]
+pub enum VItem {
+    Element {
+        name: String
+    },
+    Text {
+        value: String
+    }
+}
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct VNode {
     pub id: VRef,
     pub parent: Option<VRef>,
     pub children: Vec<VRef>,
-    pub kind: Kind,
+    pub item: Option<VItem>,
 }
 
 impl VNode {
@@ -62,7 +70,7 @@ impl VNode {
             id,
             parent: None,
             children: Vec::new(),
-            kind: String::new(),
+            item: None,
         }
     }
 }
@@ -85,6 +93,7 @@ impl VTree {
             root: None
         }
     }
+
     pub fn create_node(&mut self, node_ref: &VRef) -> VRef {
         let node = VNode::new(*node_ref);
         self.nodes.insert(*node_ref, node);
@@ -188,7 +197,7 @@ impl VTree {
 mod test {
     use speculoos::prelude::*;
 
-    use crate::{VRef, VTree};
+    use crate::{VItem, VRef, VTree};
 
     #[test]
     fn test_parent_child_relationship() {
@@ -256,10 +265,13 @@ mod test {
 
 
         tree.update_node(&node_c, Box::new(|node| {
-            node.kind = String::from("div")
+            node.item = Some(VItem::Text { value: String::from("div") })
         }));
 
-        assert_that!(tree.get_node(&node_c).unwrap().kind.as_str())
-            .is_equal_to("div")
+        let item = tree.get_node(&node_c).unwrap().item.unwrap();
+
+        assert_that!(&item)
+            .is_equal_to(VItem::Text { value: String::from("div") })
+
     }
 }
