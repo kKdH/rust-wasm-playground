@@ -55,21 +55,23 @@ pub fn greet() {
         <div class="container">
             <div class="columns is-mobile is-centered">
                 <div class="column is-half login-form">
-                    <div class="field">
-                        <label class="label">"User"</label>
-                        <div class="control">
-                            <input></input>
+                    <div class="box">
+                        <div class="field">
+                            <label class="label">"User"</label>
+                            <div class="control">
+                                <input class="input"></input>
+                            </div>
                         </div>
-                    </div>
-                    <div class="field">
-                        <label class="label">"Password"</label>
-                        <div class="control">
-                            <input></input>
+                        <div class="field">
+                            <label class="label">"Password"</label>
+                            <div class="control">
+                                <input class="input"></input>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <div>
-                            <button>"Login"</button>
+                        <div class="field">
+                            <div>
+                                <button class="button is-primary">"Login"</button>
+                            </div>
                         </div>
                     </div>
                 </div>
