@@ -34,6 +34,7 @@ impl ToTokens for Html {
                     });
                     result
                 });
+
                 let text_content = match element.get_text() {
                     None => {
                         quote! { core::option::Option::None }
@@ -45,7 +46,7 @@ impl ToTokens for Html {
                         }
                     }
                 };
-                let text_content =
+
                 quotes.push(quote! {
                     {
                         let node_ref = <vdom::VRef>::from_string(String::from(#node_ref_uuid_literal)).ok().unwrap();

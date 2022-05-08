@@ -105,6 +105,23 @@ impl HtmlToken {
                 }
             }
         }
+        else if  let Ok(keyword) = input.parse::<Token![type]>() { // TODO: Is this a proper way to parse elements, attributes etc.?
+            let ident = Ident::new("type", keyword.span);
+            match tokens.last() {
+                Some(HtmlToken::LessThan) => {
+                    Ok(vec![HtmlToken::ElementStart { ident }])
+                }
+                Some(HtmlToken::Slash) => {
+                    Ok(vec![HtmlToken::ElementEnd { ident: Some(ident) }])
+                }
+                Some(HtmlToken::ElementStart { .. }) | Some(HtmlToken::AttributeValue { .. }) => {
+                    Ok(vec![HtmlToken::AttributeName { ident }])
+                }
+                _ => {
+                    Err(input.error("No element start token '<' found!"))
+                }
+            }
+        }
         else if let Ok(literal) = input.parse::<LitStr>() {
             match tokens.last() {
                 Some(HtmlToken::Eq) => {
@@ -270,6 +287,28 @@ mod test_html_token_parsing {
                 HtmlToken::AttributeName { ident: Ident::new("class", Span::call_site()) },
                 HtmlToken::Eq,
                 HtmlToken::AttributeValue { literal: LitStr::new("foobar", Span::call_site()) },
+                HtmlToken::GreaterThan,
+                HtmlToken::EOF
+            ]);
+    }
+
+
+    #[test]
+    fn test_parse_html_element_containing_rust_keyword() {
+
+        let html: HtmlTokenStream = parse_quote! {
+            <input type="password" />
+        };
+
+        assert_that(&html.tokens)
+            .is_equal_to(&vec![
+                HtmlToken::LessThan,
+                HtmlToken::ElementStart { ident: Ident::new("input", Span::call_site()) },
+                HtmlToken::AttributeName { ident: Ident::new("type", Span::call_site()) },
+                HtmlToken::Eq,
+                HtmlToken::AttributeValue { literal: LitStr::new("password", Span::call_site()) },
+                HtmlToken::Slash,
+                HtmlToken::ElementEnd { ident: None },
                 HtmlToken::GreaterThan,
                 HtmlToken::EOF
             ]);

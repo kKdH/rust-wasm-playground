@@ -65,7 +65,7 @@ pub fn greet() {
                         <div class="field">
                             <label class="label">"Password"</label>
                             <div class="control">
-                                <input class="input"></input>
+                                <input class="input" type="password"></input>
                             </div>
                         </div>
                         <div class="field">
