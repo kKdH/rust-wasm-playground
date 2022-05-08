@@ -16,12 +16,15 @@ impl VNodeLink for VNode {
             None => {
                 match item {
                     None => { panic!("No item") }
-                    Some(VItem::Element { name, attributes}) => {
+                    Some(VItem::Element { name, attributes, text }) => {
                         let element = document.create_element(name).expect("element created");
                         element.set_id(id.as_str());
                         attributes.iter().for_each(|(name, value)| {
                             element.set_attribute(name.as_str(), value.as_str());
                         });
+                        if let Some(value) = text {
+                            element.set_text_content(Some(value.as_str()))
+                        }
                         element
                     }
                     Some(VItem::Text { .. }) => {
@@ -31,7 +34,6 @@ impl VNodeLink for VNode {
             },
             Some(element) => element,
         };
-        element.set_text_content(Some("Hello World"));
         element
     }
 }

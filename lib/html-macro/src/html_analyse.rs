@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use crate::html::{Html, HtmlAttribute, HtmlElement};
 use crate::html_parse::{HtmlToken};
 use crate::HtmlTokenStream;
@@ -83,17 +84,38 @@ impl Behavior {
         match self {
             Behavior::Same => panic!("'Same' can not be the first behavior!"),
             Behavior::Done => Behavior::Done,
-            Behavior::Failure(_) => self,
+            Behavior::Failure(_) => panic!("A1"), //self,
             Behavior::Custom(behavior_fn) => {
                 let next_behavior = behavior_fn(context, token);
                 match next_behavior {
                     Behavior::Custom(_) => next_behavior,
                     Behavior::Same => self,
                     Behavior::Done => Behavior::Done,
-                    Behavior::Failure(_) => self,
+                    Behavior::Failure(_) => next_behavior,
                 }
             }
         }
+    }
+}
+
+impl Debug for Behavior {
+
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut result = match self {
+            Behavior::Custom(_) => {
+                formatter.debug_struct("Custom")
+            }
+            Behavior::Same => {
+                formatter.debug_struct("Same")
+            }
+            Behavior::Done => {
+                formatter.debug_struct("Done")
+            }
+            Behavior::Failure(_) => {
+                formatter.debug_struct("Failure")
+            }
+        };
+        result.finish()
     }
 }
 
@@ -119,7 +141,7 @@ fn analyse_element_start(context: &mut AnalyseContext, token: &HtmlToken) -> Beh
         HtmlToken::Slash => Behavior::of(analyse_element_end),
         HtmlToken::Eq => Behavior::fail("Unexpected ="),
         HtmlToken::ElementStart { ident } => {
-            context.stack.push(HtmlElement::new(ident.to_string(), Vec::new(), Vec::new()));
+            context.stack.push(HtmlElement::new(ident.to_string(), Vec::new(), Vec::new(), None));
             Behavior::of(analyse_element_attributes)
         },
         HtmlToken::ElementEnd { .. } => Behavior::fail("Unexpected <"),
@@ -159,7 +181,15 @@ fn analyse_element_end(context: &mut AnalyseContext, token: &HtmlToken) -> Behav
         HtmlToken::ElementEnd { .. } => Behavior::same(),
         HtmlToken::AttributeName { .. } => Behavior::fail("Unexpected attribute name"),
         HtmlToken::AttributeValue { .. } => Behavior::fail("Unexpected attribute value"),
-        HtmlToken::Text { .. } => Behavior::fail("Unexpected text"),
+        HtmlToken::Text { literal } => {
+            match context.stack.last_mut() {
+                None => Behavior::fail("Unexpected text"),
+                Some(element) => {
+                    element.set_text(Some(literal.value()));
+                    Behavior::Same
+                }
+            }
+        },
         HtmlToken::EOF => Behavior::unexpected("Got unexpected token while analysing the end of an element!", token)
     }
 }
@@ -245,7 +275,7 @@ mod test {
 
         assert_that(&html).is_ok();
         assert_that(html.ok().unwrap().root())
-            .is_equal_to(HtmlElement::new(String::from("div"), Vec::new(), Vec::new()))
+            .is_equal_to(HtmlElement::new(String::from("div"), Vec::new(), Vec::new(), None))
     }
 
     #[test]
@@ -274,7 +304,8 @@ mod test {
                 vec![
                     HtmlAttribute::new(String::from("id"), Some(String::from("container")))
                 ],
-                Vec::new()
+                Vec::new(),
+                None
             ))
     }
 
@@ -294,7 +325,7 @@ mod test {
 
         assert_that(&html).is_ok();
         assert_that(html.ok().unwrap().root())
-            .is_equal_to(HtmlElement::new(String::from("img"), Vec::new(), Vec::new()))
+            .is_equal_to(HtmlElement::new(String::from("img"), Vec::new(), Vec::new(), None))
     }
 
     #[test]
@@ -326,8 +357,41 @@ mod test {
                 String::from("div"),
                 Vec::new(),
                 vec![
-                    HtmlElement::new(String::from("p"), Vec::new(), Vec::new())
-                ]
+                    HtmlElement::new(
+                        String::from("p"),
+                        Vec::new(),
+                        Vec::new(),
+                        None
+                    ),
+                ],
+                None
             ));
+    }
+
+    #[test]
+    fn test_analyse_element_with_text_content() {
+
+        let input = HtmlTokenStream::new(vec![
+            HtmlToken::LessThan,
+            HtmlToken::ElementStart { ident: Ident::new("div", Span::call_site()) },
+            HtmlToken::GreaterThan,
+            HtmlToken::Text { literal: LitStr::new("hello world", Span::call_site()) },
+            HtmlToken::LessThan,
+            HtmlToken::Slash,
+            HtmlToken::ElementEnd { ident: Some(Ident::new("div", Span::call_site())) },
+            HtmlToken::GreaterThan,
+            HtmlToken::EOF
+        ]);
+
+        let html: Result<Html, AnalyseError> = analyse_html(input);
+
+        assert_that(&html).is_ok();
+        assert_that(html.ok().unwrap().root())
+            .is_equal_to(HtmlElement::new(
+                String::from("div"),
+                Vec::new(),
+                Vec::new(),
+                Some(String::from("hello world"))
+            ))
     }
 }

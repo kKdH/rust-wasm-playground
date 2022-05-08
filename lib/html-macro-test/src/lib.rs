@@ -35,7 +35,11 @@ mod test {
         assert_that!(parsed_root)
             .is_some();
         assert_that!(parsed_tree.get_node(&parsed_root.unwrap()).unwrap().item)
-            .is_equal_to(Some(VItem::Element { name: String::from("div"), attributes: vec![("class".into(), "container".into())] }));
+            .is_equal_to(Some(VItem::Element {
+                name: String::from("div"),
+                attributes: vec![("class".into(), "container".into())],
+                text: None
+            }));
         assert_that!(&parsed_tree.children(&parsed_root.unwrap()))
             .matching_contains(|node| {
                 match &node.item {

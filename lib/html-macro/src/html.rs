@@ -19,13 +19,14 @@ impl Html {
 pub struct HtmlElement {
     name: String,
     attributes: Vec<HtmlAttribute>,
-    children: Vec<HtmlElement>
+    children: Vec<HtmlElement>,
+    text: Option<String>,
 }
 
 impl HtmlElement {
 
-    pub fn new(name: String, attributes: Vec<HtmlAttribute>, children: Vec<HtmlElement>) -> HtmlElement {
-        HtmlElement { name, attributes, children }
+    pub fn new(name: String, attributes: Vec<HtmlAttribute>, children: Vec<HtmlElement>, text: Option<String>) -> HtmlElement {
+        HtmlElement { name, attributes, children, text }
     }
 
     pub fn add_attribute(&mut self, attribute: HtmlAttribute) {
@@ -38,6 +39,14 @@ impl HtmlElement {
 
     pub fn get_name(&self) -> &String {
         &self.name
+    }
+
+    pub fn set_text(&mut self, text: Option<String>) {
+        self.text = text
+    }
+
+    pub fn get_text(&self) -> &Option<String> {
+        &self.text
     }
 
     pub fn children(&self) -> &Vec<HtmlElement> {
@@ -60,9 +69,4 @@ impl HtmlAttribute {
     pub fn new(name: String, value: Option<String>) -> HtmlAttribute {
         HtmlAttribute { name, value }
     }
-}
-
-#[derive(PartialEq, Debug)]
-pub struct HtmlText {
-    value: String
 }

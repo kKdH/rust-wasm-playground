@@ -1,12 +1,11 @@
-use std::alloc::alloc;
 use std::collections::VecDeque;
 
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, TokenStreamExt, ToTokens};
+use quote::{quote, ToTokens};
 use syn::LitStr;
 use uuid::Uuid;
 
-use crate::html::{HtmlElement};
+use crate::html::HtmlElement;
 use crate::Html;
 
 impl ToTokens for Html {
@@ -35,7 +34,18 @@ impl ToTokens for Html {
                     });
                     result
                 });
-
+                let text_content = match element.get_text() {
+                    None => {
+                        quote! { core::option::Option::None }
+                    }
+                    Some(text) => {
+                        let text_literal = LitStr::new(text.as_str(), Span::call_site());
+                        quote! {
+                            core::option::Option::Some(String::from(#text_literal))
+                        }
+                    }
+                };
+                let text_content =
                 quotes.push(quote! {
                     {
                         let node_ref = <vdom::VRef>::from_string(String::from(#node_ref_uuid_literal)).ok().unwrap();
@@ -44,6 +54,7 @@ impl ToTokens for Html {
                             node.item = core::option::Option::Some(vdom::VItem::Element {
                                 name: String::from(#node_name_literal),
                                 attributes: vec![#attributes],
+                                text: #text_content,
                             });
                         }));
                     };

@@ -50,6 +50,7 @@ pub enum VItem {
     Element {
         name: String,
         attributes: Vec<(String, String)>,
+        text: Option<String>,
     },
     Text {
         value: String
@@ -263,7 +264,6 @@ mod test {
         tree.append_child(&node_a, &node_b);
         tree.append_child(&node_a, &node_c);
         tree.append_child(&node_b, &node_d);
-
 
         tree.update_node(&node_c, Box::new(|node| {
             node.item = Some(VItem::Text { value: String::from("div") })
