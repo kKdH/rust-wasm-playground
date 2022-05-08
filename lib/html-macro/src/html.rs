@@ -43,9 +43,13 @@ impl HtmlElement {
     pub fn children(&self) -> &Vec<HtmlElement> {
         &self.children
     }
+
+    pub fn attributes(&self) -> &Vec<HtmlAttribute> {
+        &self.attributes
+    }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct HtmlAttribute {
     pub name: String,
     pub value: Option<String>

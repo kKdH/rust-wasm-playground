@@ -52,18 +52,25 @@ pub fn greet() {
     };
 
     let tree: VTree = html! {
-        <div>
-            <div>
-                <div></div>
-                <div>
-                    <label></label>
-                    <div>
-                        <input></input>
+        <div class="container">
+            <div class="columns is-mobile is-centered">
+                <div class="column is-half login-form">
+                    <div class="field">
+                        <label class="label">"User"</label>
+                        <div class="control">
+                            <input></input>
+                        </div>
                     </div>
-                </div>
-                <div>
+                    <div class="field">
+                        <label class="label">"Password"</label>
+                        <div class="control">
+                            <input></input>
+                        </div>
+                    </div>
                     <div>
-                        <button></button>
+                        <div>
+                            <button>"Login"</button>
+                        </div>
                     </div>
                 </div>
             </div>

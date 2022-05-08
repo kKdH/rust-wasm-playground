@@ -48,7 +48,8 @@ impl From<&VNode> for VRef {
 #[derive(PartialEq, Debug, Clone)]
 pub enum VItem {
     Element {
-        name: String
+        name: String,
+        attributes: Vec<(String, String)>,
     },
     Text {
         value: String
